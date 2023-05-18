@@ -1,0 +1,714 @@
+---
+---
+---
+
+# Predicting the Inflation Rate with CPI and PPI Using Machine Learning Methods
+
+Group Members:
+
+-   Wang Qiman (1155183652)
+
+-   Li Wanqi (1155184632)
+
+-   Tang Hui (1155180566)
+
+## CONTENTS
+
+1.  Variable Selection
+
+2.  Selection of Four Model
+
+3.  ARIMA------without any X-predictors as a Benchmark Model
+
+4.  Dynamic Factor Model with Principal Component Analysis
+
+5.  ARIMA------with Principal Component Analysis
+
+6.  Random Forest
+
+7.  Model Comparison and Data Choose for Inflation Rate Forecast
+
+## 1. Variable Selection
+
+Among the 152 variables provided in the task, a significant number of them exhibit correlations with CPI (Consumer Price Index) or PPI (Producer Price Index). However, in order to prevent over-fitting of the model, it is crucial to control the quantity of predictor variables and proceed with a meticulous selection process. As a result, we have opted to exclusively choose variables that display a strong correlation with CPI and PPI as predictors for the machine learning model.
+
+Our initial step involves conducting a thorough review of academic papers pertaining to the factors influencing CPI and PPI, both within China and in other countries such as the US and Russia. From these past empirical research studies, we extract a selection of 24 variables that serve as predictors for CPI, as well as 15 variables that predict PPI. These variables are chosen specifically for their strong correlations with CPI and PPI. Given that our primary objective is to forecast the inflation rate in China, we prioritize literature that primarily focuses on domestic sources.
+
+Additionally, we consider variables that, from an economic standpoint, are intuitively expected to have a significant impact on or exhibit a strong correlation with CPI and PPI. They might be correlated with CPI and PPI through price, money supply, market expectations, and so on.
+
+By combining these two approaches, we identify a total of 66 CPI predictor variables and 55 PPI predictor variables. To organize and analyze this extensive set of variables, we categorize them into four distinct groups based on their economic impact on CPI and PPI transmission. These categories include prices, money supply, market expectations, and sub-items, each of which displays a strong correlation with CPI and PPI in their respective domains.
+
+The specific predictors of each category are saved as "Final Predictors.xlsx" in our repository.
+
+## 2. Selection of Four Model
+
+In our project, we employ three machine learning models to predict CPI and PPI. These models include ARIMA (Auto-Regressive Integrated Moving Average), Dynamic Factor Model with Principal Component Analysis, ARIMA with Principal Component Analysis, and Random Forest. Each model offers distinct advantages/disadvantages and capabilities for forecasting CPI and PPI based on the given data and variables.
+
+### 2.1 ARIMA------without any X-predictors as a Benchmark Model
+
+In this model, we utilize only lagged predicted variables from the model itself to forecast the next 30 monthly CPI and PPI values.
+
+ARIMA, which stands for Auto Regressive Integrated Moving Average, is a widely used time series model that takes into account both autocorrelation and trend to predict future values. Its popularity stems from its simplicity and effectiveness in modeling and forecasting time series data. Given that our project revolves around predicting time series data for CPI and PPI, the ARIMA model is a suitable choice as it aligns well with the nature of our task.
+
+In the subsequent three models, we will employ our selected predictors.
+
+### 2.2 Dynamic Factor Models with Principal Component Analysis
+
+Dynamic Factor Models with Principal Component Analysis (DFMs with PCA) are an innovative approach within the realm of statistical models. The technique is aimed at capturing the shared latent factors that influence a large set of variables over time. By integrating PCA into DFMs, the intention is to enhance the management of high-dimensional time series data by reducing dimensionality and extracting significant features, thus improving interpretability.
+
+In our project, we tested DFMs with PCA with the hope of capturing the common underlying factors influencing our variables and enhancing our forecasting tasks, particularly for predicting CPI and PPI.
+
+### 2.3 ARIMA------with Principal Component Analysis
+
+During the course of our project, the application of DFMs with PCA encountered challenges and we introduced an alternative approach: ARIMA+PCA. ARIMA with PCA represents a sophisticated approach in the field of time series forecasting. ARIMA models are known for their ability to capture various temporal structures, while PCA is a dimension-reduction technique that isolates significant features in high-dimensional dataset. The integration of PCA into ARIMA aims to enhance the model's performance by reducing dimensionality and improving interpretability.
+
+In the subsequent sections of this paper, we will explore the utilization of ARIMA integrated with PCA, detailing the theoretical underpinnings, model implementation, and the expected advantages of this combined approach.
+
+### 2.4 Random Forest
+
+Random Forest is a highly popular ensemble learning algorithm that leverages multiple decision trees to enhance predictive performance and alleviate overfit. It demonstrates robust capabilities for both classification and regression tasks, making it particularly well-suited for forecasting CPI and PPI, among other dataset.
+
+Within our project, we have identified 66 potential predictor variables for CPI and 55 for PPI, each potentially correlated with the respective target variable. In such instances, Random Forest proves to be a fitting choice due to its adeptness in handling high-dimensional data with intricate inter dependencies between variables. The ensemble nature of Random Forest also helps minimize the risk of overfit, ensuring the model's capacity to generalize effectively to novel data. Moreover, the model offers flexibility in terms of adjustment and optimization. Parameters such as the number and depth of trees, feature sampling rate, and node splitting criteria can be fine-tuned to optimize its performance.
+
+Considering these factors, Random Forest emerges as a sensible and effective choice for predicting CPI and PPI within our project.
+
+## 3. ARIMA------without any X-predictors as a Benchmark Model
+
+In this model, as mentioned before, we only introduce two data sets, cpi and ppi, and use ARIMA specifically for time series analysis.
+
+First, we transform the CPI/PPI into time-series data. Then, we use the "auto.arima" command to automatically select an appropriate ARIMA model.
+
+```{r}
+rm(list = ls())
+load(url("https://github.com/zhentaoshi/Econ5821/raw/main/data_example/dataset_inf.Rdata"))
+#install.packages("forecast")   # Install the forecast package
+library(forecast)              # Load the forecast package
+cpi_ts <- ts(cpi[, 2])
+arima_model <- auto.arima(cpi_ts)
+predictions <- forecast(arima_model, h = 30)
+print(predictions)
+```
+
+We then plot the predicted values of the cpi, along with the predicted values within the 95% confidence interval.
+
+```{r}
+# Plotting the historical CPI data
+plot(cpi_ts, main = "CPI Prediction", ylab = "CPI Level")
+# Add the predicted values to the plot
+lines(predictions$mean, col = "red")  # Mean predictions
+lines(predictions$lower[, "95%"], col = "blue", lty = "dashed")  # 95% confidence interval lower bound
+lines(predictions$upper[, "95%"], col = "blue", lty = "dashed")  # 95% confidence interval upper bound
+```
+
+In the same way, we forecast the ppi value and plot it along with the 95% confidence interval.
+
+```{r}
+ppi_ts <- ts(ppi[, 2])
+arima_model <- auto.arima(ppi_ts)
+predictions <- forecast(arima_model, h = 30)
+print(predictions)
+# Plotting the historical PPI data
+plot(ppi_ts, main = "PPI Prediction", ylab = "PPI Level")
+# Add the predicted values to the plot
+lines(predictions$mean, col = "red")  # Mean predictions
+lines(predictions$lower[, "95%"], col = "blue", lty = "dashed")  # 95% confidence interval lower bound
+lines(predictions$upper[, "95%"], col = "blue", lty = "dashed")  # 95% confidence interval upper bound
+```
+
+This is the preliminary exploration of our group. We use auto.arima to make simple prediction on the data of PPI and CPI from period 1 to 168 without introducing X and fake.X variables.
+
+## 4. Dynamic Factor Model with Principal Component Analysis
+
+In this section, we use the model of DFM+PCA. According to the first part, we selected 66 (CPI) and 55 (PPI) potentially correlated predictor variables.
+
+Upon implementation, however, the DFM with PCA approach did not yield the expected performance for predicting CPI and PPI within our project. Despite the theoretical advantages, the results did not match our expectations. The PCA component, while designed to provide robustness by isolating significant variables, did not enhance the precision and interpretability of our forecasts as much as we had hoped.
+
+First we import the data and convert cpi, X, fake.testing.X into the actual sequence in matrix form. In this process, we will select 66 variables that are related to the CPI.
+
+```{r}
+rm(list = ls())
+load(url("https://github.com/zhentaoshi/Econ5821/raw/main/data_example/dataset_inf.Rdata"))
+library(dfms)
+library(forecast)
+selected_cols <- c(14:18, 26, 28, 30, 34:35, 41, 48:51, 55, 57, 64, 66:70, 75:81, 94, 100:125, 127:129, 140:142, 147, 150)
+cpi <- as.matrix(ts(cpi[,2], start = 1, frequency = 12)) # Assuming monthly data
+X <- as.matrix(ts(X[,selected_cols], start = 1, frequency = 12))
+fake.testing.X <- as.matrix(ts(fake.testing.X[,selected_cols], start = 169, frequency = 12))
+```
+
+Here we conduct principal component analysis, principal component factor selection, and predict the factors after selection. Our team will explain the specific methods and steps in the fifth part of arima+pca.
+
+```{r}
+pca <- prcomp(X, scale = TRUE)
+PC <- pca$x
+eig_ratio <- pca$sdev[-1]^2 / pca$sdev[-length(pca$sdev)]^2
+plot(eig_ratio, type = "b", ylab = "Eigenvalue Ratio", xlab = "Component Number")
+n_factors <- sum(pca$sdev^2 > 1)
+n_factors <- 19
+factors <- pca$x[, 1:n_factors]
+dfm_data <- data.frame(cbind(cpi, factors))
+# Fit the DFM model
+dfm_model <- DFM(dfm_data, r= 5, p = 3) 
+plot(dfm_model, method = "all", type = "individual")
+forecast_values <- predict(dfm_model, newdata = fake.testing.X, h=30)
+plot(forecast_values)
+```
+
+Due to technical reasons, the DFM() model selected by our team fails to effectively distinguish the dependent variable from the independent variable, and fails to combine the values of CPI1-168 periods and the macro data of testing. Therefore, the team considered that this method failed and carried out the following arima+pca modeling prediction.
+
+## 5. ARIMA------with Principal Component Analysis
+
+Encountering the challenges with DFM integrated with PCA prompted us to seek an alternative modeling strategy. We turned our attention towards the ARIMA with PCA model.
+
+In this section, we will walk through our journey with the ARIMA integrated with PCA model, from its implementation to the outcomes. This transition to ARIMA with PCA highlights the adaptive nature of data science and the need for constant reassessment and adjustment in our modeling techniques to achieve optimal results.
+
+First we import the data and convert cpi, ppi, X, fake.testing.X into actual series in matrix form. In this process, we will select 66 variables related to the CPI and 55 variables related to the PPI.
+
+```{r}
+rm(list = ls())
+load(url("https://github.com/zhentaoshi/Econ5821/raw/main/data_example/dataset_inf.Rdata"))
+library(ggplot2)
+library(forecast)
+selected_cols_cpi <- c(14:18, 26, 28, 30, 34:35, 41, 48:51, 55, 57, 64, 66:70, 75:81, 94, 100:125, 127:129, 140:142, 147, 150)
+selected_cols_ppi <- c(3:13, 18, 26, 34:35, 37, 44, 47, 49, 51, 64, 71:79, 82:93, 102:108, 129, 142, 148:149)
+cpi <- as.matrix(ts(cpi[,2], start = 1, frequency = 12)[, "CPI"]) 
+ppi <- as.matrix(ts(ppi[,2], start = 1, frequency = 12)[, "PPI"]) 
+X_cpi <- as.matrix(ts(X[,selected_cols_cpi], start = 1, frequency = 12))
+X_ppi <- as.matrix(ts(X[,selected_cols_ppi], start = 1, frequency = 12))
+fake.testing.X_cpi <- as.matrix(ts(fake.testing.X[,selected_cols_cpi], start = 169, frequency = 12))
+fake.testing.X_ppi <- as.matrix(ts(fake.testing.X[,selected_cols_ppi], start = 169, frequency = 12))
+```
+
+Subsequently, we carried out Principal Component Analysis (PCA) on X.cpi. During this process, we employed two methods to select the factors after PCA.
+
+The first method was the Elbow Method, which works by plotting the cumulative percentage of explained variance. In general, as the number of principal components increases, the additional variance explained by each new principal component gradually decreases. At a certain point, adding more principal components does not provide a significant increase in explanatory power---this point is referred to as the "elbow". It is typically chosen as the number of principal components. However, the actual graph we obtained did not show a clear decline. If we were to choose the point of significant decline, which involved 61 principal components, the forecasted graph would be almost identical to the actual graph, leading to overfit.
+
+The second method was the Kaiser Criterion, used for principal component selection. The resulting number of principal components was 19. Upon reviewing the fit graph, our team observed that the forecasting performance was quite good, thus we opted for Method Two.
+
+Applying Method Two to testing on X resulted in 20 principal components, a slight variation from the 19 components obtained from the analysis of X. Due to the significant discrepancy between testing.X and X, the same number of principal components cannot be guaranteed. Re-predicting testing using the predict function would lead to considerable errors. Therefore, we directly chose the 19 principal components derived from the analysis of X.
+
+```{r}
+#Perform PCA on X and fake.testing.X
+pca_cpi <- prcomp(X_cpi[,-1])
+pca_test_cpi <- prcomp(fake.testing.X_cpi[,-1])
+pca_ppi <- prcomp(X_ppi[,-1])
+pca_test_ppi <- prcomp(fake.testing.X_ppi[,-1])
+
+# Extract the principal components_cpi
+##method1：Elbow method
+eig_ratio_cpi <- pca_cpi$sdev[-1]^2 / pca_cpi$sdev[-length(pca_cpi$sdev)]^2
+plot(eig_ratio_cpi, type = "b", ylab = "Eigenvalue Ratio_cpi", xlab = "Component Number")
+##method2：Kaiser criterion，get :n_factors equals to 19
+n_factors_cpi <- sum(pca_cpi$sdev^2 > 1)
+
+factors_cpi <- pca_cpi$x[, 1:n_factors_cpi]
+factors_test_cpi <- pca_test_cpi$x[, 1:n_factors_cpi]
+##The downlink code can make the winner factor the same, but this produces a large bias
+##factors_test_cpi <- predict(pca_cpi, newdata = fake.testing.X_cpi[,-1])[,1:n_factors_cpi]
+```
+
+Accordingly, we obtain that the principal component factor of PPI is 28.
+
+```{r}
+#Extract the principal components_ppi, n_factors_ppi equals to 28，
+eig_ratio_ppi <- pca_ppi$sdev[-1]^2 / pca_ppi$sdev[-length(pca_ppi$sdev)]^2
+plot(eig_ratio_ppi, type = "b", ylab = "Eigenvalue Ratio_ppi", xlab = "Component Number")
+n_factors_ppi <- sum(pca_ppi$sdev^2 > 1)
+factors_ppi <- pca_ppi$x[, 1:n_factors_ppi]
+factors_test_ppi <- pca_test_ppi$x[, 1:n_factors_ppi]
+```
+
+After selecting the principal components, we utilized the auto.arima function for modeling. We trained the model using data from period 1 to 168 of X and obtained the corresponding model values for CPI and PPI for the same periods. We then calculated the Mean Squared Error (MSE) and the Root Mean Squared Error (RMSE) of these model values. Graphical visualizations were also created to better represent these results.
+
+```{r}
+# Estimate an auto-regressive model with external regressors (the factors)-cpi
+model_cpi <- auto.arima(cpi, xreg = factors_cpi)
+forecastcpi <- forecast(model_cpi, xreg = factors_cpi)
+#calculate MSE and RMSE
+forecastcpi_mse <- mean((forecastcpi$mean - cpi)^2)
+forecastcpi_rmse <- sqrt(forecastcpi_mse)
+print(paste0("主成分分析下的ARIAMA模型得到有关CPI的MSE: ", forecastcpi_mse))
+print(paste0("主成分分析下的ARIAMA模型得到有关CPI的RMSE: ", forecastcpi_rmse))
+#MSE is 0.0585115857973596, RMSE为0.24189168195157
+#Draw pictures
+plot_cpidata <- data.frame(
+  Month = 1:168,
+  Actual_CPI = cpi,
+  Forecasted_CPI = forecastcpi$mean
+)
+ggplot(plot_cpidata, aes(x = Month)) +
+  geom_line(aes(y = Actual_CPI), colour = "blue") +
+  geom_line(aes(y = Forecasted_CPI), colour = "red") +
+  labs(x = "Month", y = "CPI", 
+       title = "Actual vs Forecasted CPI",
+       subtitle = "Blue: Actual CPI, Red: Forecasted CPI") +
+  theme_minimal()
+
+# Estimate an auto-regressive model with external regressors (the factors)-ppi
+model_ppi <- auto.arima(ppi, xreg = factors_ppi)
+forecastppi <- forecast(model_ppi, xreg = factors_ppi)
+#calculate MSE and RMSE
+forecastppi_mse <- mean((forecastppi$mean - ppi)^2)
+forecastppi_rmse <- sqrt(forecastppi_mse)
+print(paste0("主成分分析下的ARIAMA模型得到有关PPI的MSE: ", forecastppi_mse))
+print(paste0("主成分分析下的ARIAMA模型得到有关PPI的RMSE: ", forecastppi_rmse))
+#MSE为0.112467107193535, RMSE为0.335361159339502
+#Draw pictures
+plot_ppidata <- data.frame(
+  Month = 1:168,
+  Actual_PPI = ppi,
+  Forecasted_PPI = forecastppi$mean
+)
+ggplot(plot_ppidata, aes(x = Month)) +
+  geom_line(aes(y = Actual_PPI), colour = "blue") +
+  geom_line(aes(y = Forecasted_PPI), colour = "red") +
+  labs(x = "Month", y = "PPI", 
+       title = "Actual vs Forecasted PPI",
+       subtitle = "Blue: Actual PPI, Red: Forecasted PPI") +
+  theme_minimal()
+```
+
+Based on the established model, we imported the testing data for periods 169 to 198. This allowed us to obtain the corresponding CPI and PPI data, which were subsequently graphically represented. We then generated the forecast values for the next 30 periods for both CPI and PPI, which are presented in 'forecast_cpi' and 'forecast_ppi', respectively.
+
+```{r}
+#forecast cpi
+forecast_testcpi <- forecast(model_cpi, xreg = factors_test_cpi)
+# Create a data frame for plotting
+plot_data_cpi <- data.frame(Month = c(1:198), CPI = c(cpi, forecast_testcpi$mean))
+# Plot the data
+ggplot(plot_data_cpi, aes(x = Month, y = CPI)) +
+  geom_line() +
+  geom_vline(xintercept = 168, linetype = "dashed")  # to show the point where out-of-sample forecasting starts
+
+#forecast ppi
+forecast_testppi <- forecast(model_ppi, xreg = factors_test_ppi)
+# Create a data frame for plotting
+plot_data_ppi <- data.frame(Month = c(1:198), PPI = c(ppi, forecast_testppi$mean))
+# Plot the data
+ggplot(plot_data_ppi, aes(x = Month, y = PPI)) +
+  geom_line() +
+  geom_vline(xintercept = 168, linetype = "dashed")  # to show the point where out-of-sample forecasting starts
+
+# Converts the predicted values to data frames
+forecast_cpi <- data.frame(Month = 169:198, Forecasted_CPI = forecast_testcpi$mean)
+forecast_ppi <- data.frame(Month = 169:198, Forecasted_PPI = forecast_testppi$mean)
+save(forecast_cpi, file = "forecast_cpi.RData")
+save(forecast_ppi, file = "forecast_ppi.RData")
+```
+
+## 6. Random Forest
+
+### 6.1 Random Forest------PPI
+
+1.  **Performing preparations**
+
+First, select the variable column specified earlier for predicting PPI.
+
+Second, in order to validate the effectiveness and accuracy of the method, it is decided to conduct experiments using known PPI data.
+
+Next, the known 168 PPI data points are split into a training set and a test set, using the first 120 observations as training data (train) and the remaining 48 observations as test data (test).
+
+Finally, by comparing the predicted values for the last 48 observations with the actual observations, we can verify the effectiveness of the random forest method in predicting PPI data.
+
+```{r}
+rm(list = ls())
+# Load the dataset
+load(url("https://github.com/zhentaoshi/Econ5821/raw/main/data_example/dataset_inf.Rdata"))
+library(randomForest)
+library(ggplot2)
+
+# Selecting the specified PPI variable column
+selected_cols <- c(3:13, 18, 26, 34:35, 37, 44, 47, 49, 51, 64, 71:79, 82:93, 102:108, 129, 142, 148:149)
+X <- X[, selected_cols]
+fake.testing.X <- fake.testing.X[, selected_cols]
+
+# Splitting the data into training and test sets
+# Using the first 120 observations as training data (train) and the remaining 48 observations as test data (test)
+set.seed(123)
+train_indices <- sample(1:168, 120, replace = FALSE)
+train_ppi <- ppi[train_indices, 2]
+
+train_X <- X[train_indices, -1]
+test_ppi <- ppi[-train_indices, 2]
+test_X <- X[-train_indices, -1]
+train_ppi <- data.frame(train_ppi)
+train_ppi <- as.numeric(train_ppi[[1]])
+```
+
+2.  **Training the Random Forest model**
+
+In order to train the random forest regression model, we need to find the optimal values for ntree and mtry parameters. Therefore, we set the ranges for the parameters ntree and mtry with a step size of 50 and 5, respectively. We iterate through all combinations and calculate the average error. We find the combination of ntree and mtry values that minimizes the average error.
+
+-   "ntree" represents the number of trees in the forest. A higher number of trees generally leads to better model performance but also requires more computational time.
+
+-   "mtry" represents the number of randomly selected features to consider at each node for splitting. A smaller mtry value can lead to overfitting, while a larger value can lead to underfitting.
+
+Note: To avoid long waiting times during the final report presentation, the range of ntree and mtry parameters has been adjusted to be more precise. However, in actual practice, a larger range is often used to ensure finding the optimal ntree and mtry parameters.
+
+```{r}
+# Set the range of values for ntree and mtry.
+ntree_values <- seq(400, 600, by = 50)
+mtry_values <- seq(20, 40, by = 5)
+
+# Initialize a result matrix.
+results <- matrix(NA, nrow = length(ntree_values), ncol = length(mtry_values))
+
+# Iterate through different combinations of ntree and mtry values.
+for (i in 1:length(ntree_values)) {
+  for (j in 1:length(mtry_values)) {
+    # Train the random forest model.
+    set.seed(123)
+    rf <- randomForest(train_X, train_ppi, ntree = ntree_values[i], mtry = mtry_values[j])
+    # Perform cross-validation and calculate the mean error
+    set.seed(123)
+    cv_error <- rep(NA, 10)
+    for (k in 1:10) {
+      cv_indices <- sample(1:120, 12, replace = FALSE)
+      cv_train_X <- train_X[-cv_indices, ]
+      cv_train_ppi <- train_ppi[-cv_indices]
+      cv_test_X <- train_X[cv_indices, ]
+      cv_test_ppi <- train_ppi[cv_indices]
+      cv_rf <- randomForest(cv_train_X, cv_train_ppi, ntree = ntree_values[i], mtry = mtry_values[j])
+      cv_error[k] <- mean((predict(cv_rf, cv_test_X) - cv_test_ppi)^2)
+    }
+    results[i, j] <- mean(cv_error)
+  }
+# This step may take a while as it computes the mean error for all combinations and selects the combination with the smallest mean error.
+}
+
+# Find the ntree and mtry values with the lowest mean error.
+min_error <- min(results)
+min_indices <- which(results == min_error, arr.ind = TRUE)
+optimal_ntree <- ntree_values[min_indices[1]]
+optimal_mtry <- mtry_values[min_indices[2]]
+```
+
+Based on the above testing, we have found that the optimal values for ntree and mtry are 500 and 30, respectively.
+
+Now, let's train a random forest regression model with ntree = 500, mtry = 30, considering splitting at each node. We will obtain the predicted values for the PPI data points 121-168 and compare them with the actual observations for the same data points.
+
+```{r}
+# Train a random forest regression model using the randomForest() function with 500 trees and 30 random variables considered for splitting at each node.
+rf_model <- randomForest(train_X, y = train_ppi, ntree = 500, mtry = 30)
+
+# Use the predict() function to make predictions on the test data.
+rf_pred <- predict(rf_model, newdata=test_X)
+print(cbind(test_ppi, rf_pred))
+```
+
+Compare the predicted values and actual observations for PPI data points 121-168 in a line plot. Based on the comparison plot, we observe a good fit between the predicted values and actual observations.
+
+Therefore, we can use the trained model to make predictions for the next 30 unknown PPI values.
+
+```{r}
+# Combine test_ppi and rf_pred into a data frame.
+df <- data.frame(month = 1:48, 
+                 observed = test_ppi, 
+                 predicted = rf_pred)
+# Use ggplot to create a line plot.
+# Plot the actual test data (48 observations in test) in black and the predicted data from random forest in red.
+ggplot(df, aes(x = month)) + 
+  geom_line(aes(y = PPI, color = "observed_ppi")) + 
+  geom_line(aes(y = predicted, color = "predicted_ppi")) + 
+  labs(title = "Observed and Predicted PPI", y = "PPI") +
+  scale_color_manual(values = c("black", "red"), 
+                     name = "PPI",
+                     labels = c("Observed PPI", "Predicted PPI"))
+```
+
+3.  **Evaluate the training performance of the random forest model**
+
+MSE = 0.0373501949785841. Meaning that the random forest model's predicted values have a smaller difference from the actual values.
+
+```{r}
+# Convert the variable test_ppi of type data.frame to numeric type.
+test_ppi <- as.numeric(test_ppi$PPI)
+# Calculate the Mean Squared Error (MSE) of the model.
+rf_mse <- mean((rf_pred - test_ppi)^2)
+# Print the MSE. A smaller MSE indicates better prediction performance of the model.
+print(paste0("Random forest MSE: ", rf_mse))
+```
+
+RMSE = 0.193261985342654. Meaning that the random forest model's predicted values have a smaller difference from the actual values.
+
+```{r}
+# Calculate the Root Mean Squared Error (RMSE) of the model.
+rf_rmse <- sqrt(rf_mse)
+# Print the RMSE. A smaller RMSE indicates better prediction performance of the model.
+print(paste0("Random forest RMSE: ", rf_rmse))
+```
+
+4.  **Generate the final predictions with fake.testing.X**
+
+To generate the final predictions using the trained random forest model with fake.testing.X, follow the steps below:
+
+First, split the data into a training set and a test set. In this case, use all observations as the training data.
+
+Next, train a random forest regression model with ntree = 500 and mtry = 30.
+
+Then, obtain the complete PPI predictions, including 30 predicted data points.
+
+```{r}
+#——————Generate the final predictions using the trained random forest model with fake.testing.X:
+
+# Split the data into training set and test set.
+# Use all observations as training data.
+set.seed(123)
+train_ppi2 <- ppi[, 2]
+train_X2 <- X[, -1]
+train_ppi2 <- data.frame(train_ppi2)
+train_ppi2 <- as.numeric(train_ppi2[[1]])
+
+# Train a random forest regression model using the randomForest() function with 500 trees and 30 random variables considered for splitting at each node.
+rf_model2 <- randomForest(train_X2, y = train_ppi2, ntree = 500, mtry = 30)
+# Use the trained model to predict fake.testing.X.
+fake_testing_pred <- predict(rf_model2, newdata = fake.testing.X)
+# Merge the predicted values with the original data.
+predicted_ppi <- c(train_ppi2, fake_testing_pred)
+print (predicted_ppi)
+```
+
+Finally, we generate the plot for PPI, where black represents the 168 known PPI observations, and red represents the 30 PPI predictions.
+
+```{r}
+# Original data set: observed_ppi
+observed_ppi <- data.frame(month = 1:168, PPI = train_ppi2)
+# Predicted data set: forecast_ppi
+forecast_ppi <- data.frame(month = 169:198, PPI = fake_testing_pred)
+# Merge the data sets: observed_and_forecast_ppi
+observed_and_forecast_ppi <- rbind(observed_ppi, forecast_ppi)
+# Add a color variable.
+observed_and_forecast_ppi$color <- ifelse(observed_and_forecast_ppi$month <= 168, "observed_ppi", "predicted_ppi")
+# Plot the graph.
+ggplot(observed_and_forecast_ppi, aes(x = month, y = PPI, color = color)) +
+  geom_line() +
+  labs(title = "Observed and Predicted PPI", y = "PPI") +
+  scale_color_manual(name = "PPI", values = c("observed_ppi" = "black", "predicted_ppi" = "red"))
+```
+
+### 6.2 Random Forest------CPI
+
+1.  **Performing preparations**
+
+First, select the variable column specified earlier for predicting CPI.
+
+Second, in order to validate the effectiveness and accuracy of the method, it is decided to conduct experiments using known CPI data.
+
+Next, the known 168 CPI data points are split into a training set and a test set, using the first 120 observations as training data (train) and the remaining 48 observations as test data (test).
+
+Finally, by comparing the predicted values for the last 48 observations with the actual observations, we can verify the effectiveness of the random forest method in predicting CPI data.
+
+```{r}
+rm(list = ls())
+# Load the dataset
+load(url("https://github.com/zhentaoshi/Econ5821/raw/main/data_example/dataset_inf.Rdata"))
+library(randomForest)
+library(ggplot2)
+
+# Selecting the specified CPI variable column
+selected_cols <- c(14:18, 26, 28, 30, 34:35, 41, 48:51, 55, 57, 64, 66:70, 75:81, 94, 100:125, 127:129, 140:142, 147, 150)
+X <- X[, selected_cols]
+fake.testing.X <- fake.testing.X[, selected_cols]
+
+# Splitting the data into training and test sets
+# Using the first 120 observations as training data (train) and the remaining 48 observations as test data (test)
+set.seed(123)
+train_indices <- sample(1:168, 120, replace = FALSE)
+train_cpi <- cpi[train_indices, 2]
+
+train_X <- X[train_indices, -1]
+test_cpi <- cpi[-train_indices, 2]
+test_X <- X[-train_indices, -1]
+train_cpi <- data.frame(train_cpi)
+train_cpi <- as.numeric(train_cpi[[1]])
+```
+
+2.  **Training the Random Forest model**
+
+In order to train the random forest regression model, we need to find the optimal values for ntree and mtry parameters. Therefore, we set the ranges for the parameters ntree and mtry with a step size of 50 and 5, respectively. We iterate through all combinations and calculate the average error. We find the combination of ntree and mtry values that minimizes the average error.
+
+-   "ntree" represents the number of trees in the forest. A higher number of trees generally leads to better model performance but also requires more computational time.
+
+-   "mtry" represents the number of randomly selected features to consider at each node for splitting. A smaller mtry value can lead to overfitting, while a larger value can lead to underfitting.
+
+Note: To avoid long waiting times during the final report presentation, the range of ntree and mtry parameters has been adjusted to be more precise. However, in actual practice, a larger range is often used to ensure finding the optimal ntree and mtry parameters.
+
+```{r}
+# Set the range of values for ntree and mtry.
+ntree_values <- seq(200, 400, by = 50)
+mtry_values <- seq(40, 60, by = 5)
+
+# Initialize a result matrix.
+results <- matrix(NA, nrow = length(ntree_values), ncol = length(mtry_values))
+
+# Iterate through different combinations of ntree and mtry values.
+for (i in 1:length(ntree_values)) {
+  for (j in 1:length(mtry_values)) {
+    # Train the random forest model.
+    set.seed(123)
+    rf <- randomForest(train_X, train_cpi, ntree = ntree_values[i], mtry = mtry_values[j])
+    # Perform cross-validation and calculate the mean error.
+    set.seed(123)
+    cv_error <- rep(NA, 10)
+    for (k in 1:10) {
+      cv_indices <- sample(1:120, 12, replace = FALSE)
+      cv_train_X <- train_X[-cv_indices, ]
+      cv_train_cpi <- train_cpi[-cv_indices]
+      cv_test_X <- train_X[cv_indices, ]
+      cv_test_cpi <- train_cpi[cv_indices]
+      cv_rf <- randomForest(cv_train_X, cv_train_cpi, ntree = ntree_values[i], mtry = mtry_values[j])
+      cv_error[k] <- mean((predict(cv_rf, cv_test_X) - cv_test_cpi)^2)
+    }
+    results[i, j] <- mean(cv_error)
+  }
+# This step may take a while as it computes the mean error for all combinations and selects the combination with the smallest mean error.
+}
+
+# Find the ntree and mtry values with the lowest mean error.
+min_error <- min(results)
+min_indices <- which(results == min_error, arr.ind = TRUE)
+optimal_ntree <- ntree_values[min_indices[1]]
+optimal_mtry <- mtry_values[min_indices[2]]
+```
+
+Based on the above testing, we have found that the optimal values for ntree and mtry are 300 and 50, respectively.
+
+Now, let's train a random forest regression model with ntree = 300, mtry = 50, considering splitting at each node. We will obtain the predicted values for the CPI data points 121-168 and compare them with the actual observations for the same data points.
+
+```{r}
+# Train a random forest regression model using the randomForest() function with 300 trees and 50 random variables considered for splitting at each node.
+rf_model <- randomForest(train_X, y = train_cpi, ntree = 300, mtry = 50)
+
+# Use the predict() function to make predictions on the test data.
+rf_pred <- predict(rf_model, newdata=test_X)
+print(cbind(test_cpi, rf_pred))
+```
+
+Compare the predicted values and actual observations for CPI data points 121-168 in a line plot. Based on the comparison plot, we observe a good fit between the predicted values and actual observations.
+
+Therefore, we can use the trained model to make predictions for the next 30 unknown CPI values.
+
+```{r}
+# Combine test_cpi and rf_pred into a data frame.
+df <- data.frame(month = 1:48, 
+                 observed = test_cpi, 
+                 predicted = rf_pred)
+# Use ggplot to create a line plot.
+# Plot the actual test data (48 observations in test) in black and the predicted data from random forest in red.
+ggplot(df, aes(x = month)) + 
+  geom_line(aes(y = CPI, color = "observed_cpi")) + 
+  geom_line(aes(y = predicted, color = "predicted_cpi")) + 
+  labs(title = "Observed and Predicted CPI", y = "CPI") +
+  scale_color_manual(values = c("black", "red"), 
+                     name = "CPI",
+                     labels = c("Observed CPI", "Predicted CPI"))
+```
+
+3.  **Evaluate the training performance of the random forest model**
+
+MSE = 0.0148394993208728. Meaning that the random forest model's predicted values have a smaller difference from the actual values.
+
+```{r}
+# Convert the variable test_cpi of type data.frame to numeric type.
+test_cpi <- as.numeric(test_cpi$CPI)
+# Calculate the Mean Squared Error (MSE) of the model.
+rf_mse <- mean((rf_pred - test_cpi)^2)
+# Print the MSE. A smaller MSE indicates better prediction performance of the model.
+print(paste0("Random forest MSE: ", rf_mse))
+```
+
+RMSE = 0.121817483642016. Meaning that the random forest model's predicted values have a smaller difference from the actual values.
+
+```{r}
+# Calculate the Root Mean Squared Error (RMSE) of the model.
+rf_rmse <- sqrt(rf_mse)
+# Print the RMSE. A smaller RMSE indicates better prediction performance of the model.
+print(paste0("Random forest RMSE: ", rf_rmse))
+```
+
+4.  **Generate the final predictions with fake.testing.X**
+
+To generate the final predictions using the trained random forest model with fake.testing.X, follow the steps below:
+
+First, split the data into a training set and a test set. In this case, use all observations as the training data.
+
+Next, train a random forest regression model with ntree = 300 and mtry = 50.
+
+Then, obtain the complete CPI predictions, including 30 predicted data points.
+
+```{r}
+# Split the data into training set and test set.
+# Use all observations as training data.
+set.seed(123)
+train_cpi2 <- cpi[, 2]
+train_X2 <- X[, -1]
+train_cpi2 <- data.frame(train_cpi2)
+train_cpi2 <- as.numeric(train_cpi2[[1]])
+
+# Train a random forest regression model using the randomForest() function with 300 trees and 50 random variables considered for splitting at each node.
+rf_model2 <- randomForest(train_X2, y = train_cpi2, ntree = 300, mtry = 50)
+# Use the trained model to predict fake.testing.X.
+fake_testing_pred <- predict(rf_model2, newdata = fake.testing.X)
+# Merge the predicted values with the original data.
+predicted_cpi <- c(train_cpi2, fake_testing_pred)
+print (predicted_cpi)
+```
+
+Finally, we generate the plot for CPI, where black represents the 168 known CPI observations, and red represents the 30 CPI predictions.
+
+```{r}
+# Original data set: observed_cpi
+observed_cpi <- data.frame(month = 1:168, CPI = train_cpi2)
+# Predicted data set: forecast_cpi
+forecast_cpi <- data.frame(month = 169:198, CPI = fake_testing_pred)
+# Merge the data sets: observed_and_forecast_cpi
+observed_and_forecast_cpi <- rbind(observed_cpi, forecast_cpi)
+# Add a color variable.
+observed_and_forecast_cpi$color <- ifelse(observed_and_forecast_cpi$month <= 168, "observed_cpi", "predicted_cpi")
+# Plot the graph.
+ggplot(observed_and_forecast_cpi, aes(x = month, y = CPI, color = color)) +
+  geom_line() +
+  labs(title = "Observed and Predicted CPI", y = "CPI") +
+  scale_color_manual(name = "CPI", values = c("observed_cpi" = "black", "predicted_cpi" = "red"))
+```
+
+## 7. Model Comparison and Inflation Rate Prediction
+
+We have employed two models, PCA+ARIMA and Random Forest, to predict CPI and PPI with predictors. Upon evaluation, the PCA+ARIMA model yielded an MSE of 0.058511 and an RMSE of 0.24189 for CPI, and an MSE of 0.112467 and an RMSE of 0.33536 for PPI. In contrast, the Random Forest model resulted in an MSE of 0.014894 and an RMSE of 0.121817 for CPI, and an MSE of 0.037350 and an RMSE of 0.193261 for PPI.
+
+Comparing the RSE and RMSE values of the four models, it becomes evident that the Random Forest model outperforms the PCA+ARIMA model in terms of predictive accuracy. The lower RMSE values achieved by the Random Forest model indicate its ability to provide more precise predictions. This suggests that the Random Forest model better captures the underlying patterns and relationships in the data, leading to improved forecasting performance.
+
+Considering the superior performance of the Random Forest model, we conclude that it is the more suitable choice for the subsequent prediction task. Thus, employing Random Forest to forecast CPI and subsequently calculate the inflation rate seems like a prudent approach. Random Forest is known for its capability to handle complex relationships, reduce over-fitting, and deliver robust predictions. Therefore, it holds promise for accurately forecasting the inflation rate based on CPI data.
+
+In this part, we will use Random Forest to derive the prediction results of inflation rates based on CPI.
+
+```{r}
+# According to the given formula indicating the relationship with inflation rate and CPI, we extract two parts of CPI values whose lengths are both 30
+predicted_cpi_values1 <- predicted_cpi[157:186]
+predicted_cpi_values2 <- predicted_cpi[169:198]
+
+# We derive the predicted inflation rate according to the formula using the two parts of CPI values.
+# And we obtain the results of inflation rate prediction. ( from month 169 to month 198 ）【THE RESULTS OF OUR PROJECT】
+inflation_rate_predictions <- log(predicted_cpi_values2) - log(predicted_cpi_values1)
+print(inflation_rate_predictions)
+
+# Then we generate the historical inflation rate. ( from month 13 to month 168 ) 
+inflation_rate_13to168 <- log(predicted_cpi[13:168]) - log(predicted_cpi[1:156])
+month_inflation_rate_13to168 <- 13:168
+historical_inflation_rate <- data.frame(month_inflation_rate_13to168, inflation_rate_13to168)
+print(historical_inflation_rate)
+
+# To generate plots, firstly we generate the observed inflation rates.     
+observed_inflation_rate <- data.frame(month = 13:168, Inflation_rate = inflation_rate_13to168)
+# Secondly we generate the predicted inflation rates.
+predicted_inflation_rate <- data.frame(month = 169:198, Inflation_rate = inflation_rate_predictions)
+# Thirdly we combine these two data frames into one.
+all_inflation_rate <- rbind(observed_inflation_rate, predicted_inflation_rate)
+# Next we add a color variable.
+all_inflation_rate$color <- ifelse(all_inflation_rate$month <= 168, "observed_inflation_rate", "predicted_inflation_rate")
+# Lastly we generate the plot of inflation rate prediction based on CPI(random forest).
+ggplot(all_inflation_rate, aes(x = month, y = Inflation_rate, color = color)) +
+  geom_line() +
+  labs(title = "Observed and Predicted Inflation Rate", y = "Inflation Rate") +
+  scale_color_manual(name = "Inflation Rate", values = c("observed_inflation_rate" = "black", "predicted_inflation_rate" = "red"))
+```
