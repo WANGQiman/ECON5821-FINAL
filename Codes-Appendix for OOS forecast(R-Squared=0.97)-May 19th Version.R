@@ -1,0 +1,114 @@
+# Appendix for OOS forecast (totally based on the May 18th Version of codes)
+
+# In the reference of code “PART4 | the Random Forest for CPI” to get our forecast CPI.
+# (1) We introduce real.X to conduct random forest forecast for a new series of predicted CPI. 
+# (2) Because we have identified the key ntree and mtry of the random forest model in the model, we directly formulate them in the following model.
+# (3) Based on real CPI, we calculate the OOS R-Squared of the random forest model for CPI. The R-Squared is 0.9706096.
+# (4) The random forest model has high OOS R-Squared. We then use its forecast results to calculate predicted inflation rates.
+# (5) We calculate the real inflation rate based on the real CPI. And then we compare the real with the predicted inflation rates.
+# (6) Based on the OOS R-Squared of our model and the comparison between real and predicted inflation rates, we conclude that our project results have great performance, i.e., our model predicts China's inflation rates well.
+
+
+rm(list = ls())
+# Load the dataset
+load(url("https://github.com/zhentaoshi/Econ5821/raw/main/data_example/dataset_inf.Rdata"))
+load(url("https://github.com/zhentaoshi/Econ5821/raw/main/data_example/data_oos.Rdata"))
+library(randomForest)
+library(ggplot2)
+
+# 选择指定的 CPI 变量列
+selected_cols <- c(14:18, 26, 28, 30, 34:35, 41, 48:51, 55, 57, 64, 66:70, 75:81, 94, 100:125, 127:129, 140:142, 147, 150)
+X <- X[, selected_cols]
+real.X <- real.X[, selected_cols]
+
+#——————在已经训练好的随机森林模型中使用 real.X 进行预测并生成最终的预测结果
+# 将数据分为训练集和测试集
+# 将所有观察值用作训练数据train
+set.seed(123)
+train_cpi2 <- cpi[, 2]
+train_X2 <- X[, -1]
+train_cpi2 <- data.frame(train_cpi2)
+train_cpi2 <- as.numeric(train_cpi2[[1]])
+# 使用 randomForest() 函数训练随机森林回归模型
+# 指定了300棵树和每个节点上使用50个随机变量进行分裂
+rf_model2 <- randomForest(train_X2, y = train_cpi2, ntree = 300, mtry = 50)
+# 使用训练好的模型对real.X进行预测
+real_testing_pred <- predict(rf_model2, newdata = real.X)
+# 将预测值与原始数据合并
+predicted_cpi <- c(train_cpi2, real_testing_pred)
+print (predicted_cpi)
+# 原始数据集
+observed_cpi <- data.frame(real.cpi)
+# 预测数据集
+forecast_cpi <- data.frame(month = 169:198, CPI = real_testing_pred)
+library(ggplot2)
+library(dplyr)
+# 绘制原始CPI与预测CPI的比较图
+comparison_plot <- ggplot() +
+  geom_line(data = observed_cpi, aes(x = month, y = CPI, color = "Observed CPI"), linetype = "solid") +
+  geom_line(data = forecast_cpi, aes(x = month, y = CPI, color = "Forecast CPI"), linetype = "dashed") +
+  labs(x = "Month", y = "CPI", title = "Comparison of Observed CPI and Forecast CPI") +
+  scale_color_manual(values = c("blue", "red"), guide = guide_legend(title = "Series"))
+# 计算out-of-sample（forecast_cpi）的R-squared
+observed_mean <- mean(observed_cpi$CPI)
+predicted <- forecast_cpi$CPI
+SSR <- sum((predicted - observed_cpi$CPI)^2)
+SST <- sum((observed_cpi$CPI - observed_mean)^2)
+rsquared <- 1 - SSR/SST
+# 打印R-squared值
+cat("out-of-sample的R-squared:", rsquared, "\n")
+# 显示原始CPI与预测CPI的比较图
+print(comparison_plot)
+
+# 计算相应inflation rate：
+
+# Extract two parts of CPI values whose lengths are both 30
+predicted_cpi_values1 <- predicted_cpi[157:186]
+predicted_cpi_values2 <- predicted_cpi[169:198]
+
+# Derive the predicted inflation rate according to the formula using the two parts of CPI values
+# Obtain the results of inflation rate prediction. ( from month 169 to month 198 ）【THE RESULTS OF OUR PROJECT】
+inflation_rate_predictions <- log(predicted_cpi_values2) - log(predicted_cpi_values1)
+print(inflation_rate_predictions)
+
+# Generate the historical inflation rate. ( from month 13 to month 168 ) 
+inflation_rate_13to168 <- log(predicted_cpi[13:168]) - log(predicted_cpi[1:156])
+month_inflation_rate_13to168 <- 13:168
+historical_inflation_rate <- data.frame(month_inflation_rate_13to168, inflation_rate_13to168)
+print(historical_inflation_rate)
+
+# To generate plots, firstly we generate the observed inflation rates.     
+observed_inflation_rate <- data.frame(month = 13:168, Inflation_rate = inflation_rate_13to168)
+# Secondly we generate the predicted inflation rates.
+predicted_inflation_rate <- data.frame(month = 169:198, Inflation_rate = inflation_rate_predictions)
+# Thirdly we combine these two data frames into one.
+all_inflation_rate <- rbind(observed_inflation_rate, predicted_inflation_rate)
+# Next we add a color variable.
+all_inflation_rate$color <- ifelse(all_inflation_rate$month <= 168, "observed_inflation_rate", "predicted_inflation_rate")
+# Lastly we generate the plot of inflation rate prediction based on CPI(random forest).
+ggplot(all_inflation_rate, aes(x = month, y = Inflation_rate, color = color)) +
+  geom_line() +
+  labs(title = "Observed and Predicted Inflation Rate", y = "Inflation Rate") +
+  scale_color_manual(name = "Inflation Rate", values = c("observed_inflation_rate" = "black", "predicted_inflation_rate" = "red"))
+
+# 计算出预测期30个月的真实inflation rate, 并绘制出预测期30个月真实inflation rate与预测inflation rate的对比图
+real_cpi_1to198 <- rbind(cpi, real.cpi)
+
+real_cpi_value1 <- real_cpi_1to198$CPI[1:186]
+real_cpi_value2 <- real_cpi_1to198$CPI[13:198]
+
+real_infaltion_rate <- log(real_cpi_value2)-log(real_cpi_value1)
+
+real_final <- data.frame(real_infaltion_rate[157:186])
+predicted_final <- data.frame(all_inflation_rate$Inflation_rate[157:186])
+month_vector <- 169:198
+real_final$month <- month_vector
+predicted_final$month <- month_vector
+
+comparison_plot_final <- ggplot() +
+  geom_line(data = real_final, aes(x= month, y = real_infaltion_rate[157:186], color = "Real Inflation Rate"), linetype = "solid") +
+  geom_line(data = predicted_final, aes(x = month, y = all_inflation_rate$Inflation_rate[157:186], color = "Predicted Inflation Rate"), linetype = "dashed") +
+  labs(x = "Month", y = "Inflation Rate", title = "Comparison of Real and Predicted Inflation Rates") +
+  scale_color_manual(values = c("blue", "red"), guide = guide_legend(title = "Series"))
+print(comparison_plot_final)
+
